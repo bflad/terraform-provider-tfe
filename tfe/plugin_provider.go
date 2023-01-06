@@ -33,9 +33,10 @@ func (e errUnsupportedResource) Error() string {
 }
 
 type providerMeta struct {
-	token         string
-	hostname      string
-	sslSkipVerify bool
+	token               string
+	hostname            string
+	sslSkipVerify       bool
+	defaultOrganization string
 }
 
 func (p *pluginProviderServer) GetProviderSchema(ctx context.Context, req *tfprotov5.GetProviderSchemaRequest) (*tfprotov5.GetProviderSchemaResponse, error) {
@@ -176,6 +177,12 @@ func PluginProviderServer() tfprotov5.ProviderServer {
 						Description: descriptions["ssl_skip_verify"],
 						Optional:    true,
 					},
+					{
+						Name:        "default_organization",
+						Type:        tftypes.String,
+						Description: descriptions["default_organization"],
+						Optional:    true,
+					},
 				},
 			},
 		},
@@ -232,46 +239,55 @@ func retrieveProviderMeta(req *tfprotov5.ConfigureProviderRequest) (providerMeta
 	config := req.Config
 	val, err := config.Unmarshal(tftypes.Object{
 		AttributeTypes: map[string]tftypes.Type{
-			"hostname":        tftypes.String,
-			"token":           tftypes.String,
-			"ssl_skip_verify": tftypes.Bool,
+			"hostname":             tftypes.String,
+			"token":                tftypes.String,
+			"ssl_skip_verify":      tftypes.Bool,
+			"default_organization": tftypes.String,
 		}})
 
 	if err != nil {
-		return meta, fmt.Errorf("Could not unmarshal ConfigureProviderRequest %w", err)
+		return meta, fmt.Errorf("failed to unmarshal ConfigureProviderRequest: %w", err)
 	}
 	var hostname string
 	var token string
 	var sslSkipVerify bool
+	var defaultOrganization string
 	var valMap map[string]tftypes.Value
 	err = val.As(&valMap)
 	if err != nil {
-		return meta, fmt.Errorf("Could not set the schema attributes to map %w", err)
+		return meta, fmt.Errorf("failed to set the schema attributes to map: %w", err)
 	}
 	if !valMap["hostname"].IsNull() {
 		err = valMap["hostname"].As(&hostname)
 		if err != nil {
-			return meta, fmt.Errorf("Could not set the hostname value to string %w", err)
+			return meta, fmt.Errorf("failed to set the hostname value to string: %w", err)
 		}
 	}
 	if !valMap["token"].IsNull() {
 		err = valMap["token"].As(&token)
 		if err != nil {
-			return meta, fmt.Errorf("Could not set the token value to string %w", err)
+			return meta, fmt.Errorf("failed to set the token value to string: %w", err)
 		}
 	}
 	if !valMap["ssl_skip_verify"].IsNull() {
 		err = valMap["ssl_skip_verify"].As(&sslSkipVerify)
 		if err != nil {
-			return meta, fmt.Errorf("Could not set the ssl_skip_verify value to boolean %w", err)
+			return meta, fmt.Errorf("failed to set the ssl_skip_verify value to boolean: %w", err)
 		}
 	} else {
 		sslSkipVerify = defaultSSLSkipVerify
+	}
+	if !valMap["default_organization"].IsNull() {
+		err = valMap["default_organization"].As(&defaultOrganization)
+		if err != nil {
+			return meta, fmt.Errorf("failed to set the default_organization value to string: %w", err)
+		}
 	}
 
 	meta.hostname = hostname
 	meta.token = token
 	meta.sslSkipVerify = sslSkipVerify
+	meta.defaultOrganization = defaultOrganization
 
 	return meta, nil
 }
