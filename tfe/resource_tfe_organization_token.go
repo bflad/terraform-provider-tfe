@@ -41,13 +41,13 @@ func resourceTFEOrganizationToken() *schema.Resource {
 }
 
 func resourceTFEOrganizationTokenCreate(d *schema.ResourceData, meta interface{}) error {
-	tfeClient := meta.(*tfe.Client)
+	config := meta.(ConfiguredClient)
 
 	// Get the organization name.
 	organization := d.Get("organization").(string)
 
 	log.Printf("[DEBUG] Check if a token already exists for organization: %s", organization)
-	_, err := tfeClient.OrganizationTokens.Read(ctx, organization)
+	_, err := config.Client.OrganizationTokens.Read(ctx, organization)
 	if err != nil && err != tfe.ErrResourceNotFound {
 		return fmt.Errorf("Error checking if a token exists for organization %s: %w", organization, err)
 	}
@@ -60,7 +60,7 @@ func resourceTFEOrganizationTokenCreate(d *schema.ResourceData, meta interface{}
 		log.Printf("[DEBUG] Regenerating existing token for organization: %s", organization)
 	}
 
-	token, err := tfeClient.OrganizationTokens.Create(ctx, organization)
+	token, err := config.Client.OrganizationTokens.Create(ctx, organization)
 	if err != nil {
 		return fmt.Errorf(
 			"Error creating new token for organization %s: %w", organization, err)
@@ -76,10 +76,10 @@ func resourceTFEOrganizationTokenCreate(d *schema.ResourceData, meta interface{}
 }
 
 func resourceTFEOrganizationTokenRead(d *schema.ResourceData, meta interface{}) error {
-	tfeClient := meta.(*tfe.Client)
+	config := meta.(ConfiguredClient)
 
 	log.Printf("[DEBUG] Read the token from organization: %s", d.Id())
-	_, err := tfeClient.OrganizationTokens.Read(ctx, d.Id())
+	_, err := config.Client.OrganizationTokens.Read(ctx, d.Id())
 	if err != nil {
 		if err == tfe.ErrResourceNotFound {
 			log.Printf("[DEBUG] Token for organization %s no longer exists", d.Id())
@@ -93,13 +93,13 @@ func resourceTFEOrganizationTokenRead(d *schema.ResourceData, meta interface{}) 
 }
 
 func resourceTFEOrganizationTokenDelete(d *schema.ResourceData, meta interface{}) error {
-	tfeClient := meta.(*tfe.Client)
+	config := meta.(ConfiguredClient)
 
 	// Get the organization name.
 	organization := d.Get("organization").(string)
 
 	log.Printf("[DEBUG] Delete token from organization: %s", organization)
-	err := tfeClient.OrganizationTokens.Delete(ctx, organization)
+	err := config.Client.OrganizationTokens.Delete(ctx, organization)
 	if err != nil {
 		if err == tfe.ErrResourceNotFound {
 			return nil

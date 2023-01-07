@@ -95,7 +95,7 @@ func resourceTFETeam() *schema.Resource {
 }
 
 func resourceTFETeamCreate(d *schema.ResourceData, meta interface{}) error {
-	tfeClient := meta.(*tfe.Client)
+	config := meta.(ConfiguredClient)
 
 	// Get team attributes.
 	name := d.Get("name").(string)
@@ -129,10 +129,10 @@ func resourceTFETeamCreate(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	log.Printf("[DEBUG] Create team %s for organization: %s", name, organization)
-	team, err := tfeClient.Teams.Create(ctx, organization, options)
+	team, err := config.Client.Teams.Create(ctx, organization, options)
 	if err != nil {
 		if err == tfe.ErrResourceNotFound {
-			entitlements, _ := tfeClient.Organizations.ReadEntitlements(ctx, organization)
+			entitlements, _ := config.Client.Organizations.ReadEntitlements(ctx, organization)
 			if entitlements == nil {
 				return fmt.Errorf("Error creating team %s for organization %s: %w", name, organization, err)
 			}
@@ -149,10 +149,10 @@ func resourceTFETeamCreate(d *schema.ResourceData, meta interface{}) error {
 }
 
 func resourceTFETeamRead(d *schema.ResourceData, meta interface{}) error {
-	tfeClient := meta.(*tfe.Client)
+	config := meta.(ConfiguredClient)
 
 	log.Printf("[DEBUG] Read configuration of team: %s", d.Id())
-	team, err := tfeClient.Teams.Read(ctx, d.Id())
+	team, err := config.Client.Teams.Read(ctx, d.Id())
 	if err != nil {
 		if err == tfe.ErrResourceNotFound {
 			log.Printf("[DEBUG] Team %s no longer exists", d.Id())
@@ -185,7 +185,7 @@ func resourceTFETeamRead(d *schema.ResourceData, meta interface{}) error {
 }
 
 func resourceTFETeamUpdate(d *schema.ResourceData, meta interface{}) error {
-	tfeClient := meta.(*tfe.Client)
+	config := meta.(ConfiguredClient)
 
 	// Get the name and organization.
 	name := d.Get("name").(string)
@@ -220,7 +220,7 @@ func resourceTFETeamUpdate(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	log.Printf("[DEBUG] Update team: %s", d.Id())
-	_, err := tfeClient.Teams.Update(ctx, d.Id(), options)
+	_, err := config.Client.Teams.Update(ctx, d.Id(), options)
 	if err != nil {
 		return fmt.Errorf(
 			"Error updating team %s: %w", d.Id(), err)
@@ -230,10 +230,10 @@ func resourceTFETeamUpdate(d *schema.ResourceData, meta interface{}) error {
 }
 
 func resourceTFETeamDelete(d *schema.ResourceData, meta interface{}) error {
-	tfeClient := meta.(*tfe.Client)
+	config := meta.(ConfiguredClient)
 
 	log.Printf("[DEBUG] Delete team: %s", d.Id())
-	err := tfeClient.Teams.Delete(ctx, d.Id())
+	err := config.Client.Teams.Delete(ctx, d.Id())
 	if err != nil {
 		if err == tfe.ErrResourceNotFound {
 			return nil

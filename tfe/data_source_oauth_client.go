@@ -78,13 +78,13 @@ func dataSourceTFEOAuthClient() *schema.Resource {
 
 func dataSourceTFEOAuthClientRead(d *schema.ResourceData, meta interface{}) error {
 	ctx := context.TODO()
-	tfeClient := meta.(*tfe.Client)
+	config := meta.(ConfiguredClient)
 
 	var oc *tfe.OAuthClient
 	var err error
 
 	if v, ok := d.GetOk("oauth_client_id"); ok {
-		oc, err = tfeClient.OAuthClients.Read(ctx, v.(string))
+		oc, err = config.Client.OAuthClients.Read(ctx, v.(string))
 		if err != nil {
 			return fmt.Errorf("Error retrieving OAuth client: %w", err)
 		}
@@ -103,7 +103,7 @@ func dataSourceTFEOAuthClientRead(d *schema.ResourceData, meta interface{}) erro
 			serviceProvider = tfe.ServiceProviderType(vServiceProvider.(string))
 		}
 
-		oc, err = fetchOAuthClientByNameOrServiceProvider(ctx, tfeClient, organization, name, serviceProvider)
+		oc, err = fetchOAuthClientByNameOrServiceProvider(ctx, config.Client, organization, name, serviceProvider)
 		if err != nil {
 			return err
 		}

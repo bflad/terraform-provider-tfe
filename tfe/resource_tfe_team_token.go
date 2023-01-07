@@ -41,13 +41,13 @@ func resourceTFETeamToken() *schema.Resource {
 }
 
 func resourceTFETeamTokenCreate(d *schema.ResourceData, meta interface{}) error {
-	tfeClient := meta.(*tfe.Client)
+	config := meta.(ConfiguredClient)
 
 	// Get the team ID.
 	teamID := d.Get("team_id").(string)
 
 	log.Printf("[DEBUG] Check if a token already exists for team: %s", teamID)
-	_, err := tfeClient.TeamTokens.Read(ctx, teamID)
+	_, err := config.Client.TeamTokens.Read(ctx, teamID)
 	if err != nil && err != tfe.ErrResourceNotFound {
 		return fmt.Errorf("Error checking if a token exists for team %s: %w", teamID, err)
 	}
@@ -61,7 +61,7 @@ func resourceTFETeamTokenCreate(d *schema.ResourceData, meta interface{}) error 
 	}
 
 	log.Printf("[DEBUG] Create new token for team: %s", teamID)
-	token, err := tfeClient.TeamTokens.Create(ctx, teamID)
+	token, err := config.Client.TeamTokens.Create(ctx, teamID)
 	if err != nil {
 		return fmt.Errorf(
 			"Error creating new token for team %s: %w", teamID, err)
@@ -77,10 +77,10 @@ func resourceTFETeamTokenCreate(d *schema.ResourceData, meta interface{}) error 
 }
 
 func resourceTFETeamTokenRead(d *schema.ResourceData, meta interface{}) error {
-	tfeClient := meta.(*tfe.Client)
+	config := meta.(ConfiguredClient)
 
 	log.Printf("[DEBUG] Read the token from team: %s", d.Id())
-	_, err := tfeClient.TeamTokens.Read(ctx, d.Id())
+	_, err := config.Client.TeamTokens.Read(ctx, d.Id())
 	if err != nil {
 		if err == tfe.ErrResourceNotFound {
 			log.Printf("[DEBUG] Token for team %s no longer exists", d.Id())
@@ -94,10 +94,10 @@ func resourceTFETeamTokenRead(d *schema.ResourceData, meta interface{}) error {
 }
 
 func resourceTFETeamTokenDelete(d *schema.ResourceData, meta interface{}) error {
-	tfeClient := meta.(*tfe.Client)
+	config := meta.(ConfiguredClient)
 
 	log.Printf("[DEBUG] Delete token from team: %s", d.Id())
-	err := tfeClient.TeamTokens.Delete(ctx, d.Id())
+	err := config.Client.TeamTokens.Delete(ctx, d.Id())
 	if err != nil {
 		if err == tfe.ErrResourceNotFound {
 			return nil

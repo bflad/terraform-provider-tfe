@@ -192,7 +192,7 @@ func TestAccTFETeam_import(t *testing.T) {
 func testAccCheckTFETeamExists(
 	n string, team *tfe.Team) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
-		tfeClient := testAccProvider.Meta().(*tfe.Client)
+		config := testAccProvider.Meta().(ConfiguredClient)
 
 		rs, ok := s.RootModule().Resources[n]
 		if !ok {
@@ -203,7 +203,7 @@ func testAccCheckTFETeamExists(
 			return fmt.Errorf("No instance ID is set")
 		}
 
-		t, err := tfeClient.Teams.Read(ctx, rs.Primary.ID)
+		t, err := config.Client.Teams.Read(ctx, rs.Primary.ID)
 		if err != nil {
 			return err
 		}
@@ -292,7 +292,7 @@ func testAccCheckTFETeamAttributes_full_update(
 }
 
 func testAccCheckTFETeamDestroy(s *terraform.State) error {
-	tfeClient := testAccProvider.Meta().(*tfe.Client)
+	config := testAccProvider.Meta().(ConfiguredClient)
 
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "tfe_team" {
@@ -303,7 +303,7 @@ func testAccCheckTFETeamDestroy(s *terraform.State) error {
 			return fmt.Errorf("No instance ID is set")
 		}
 
-		_, err := tfeClient.Teams.Read(ctx, rs.Primary.ID)
+		_, err := config.Client.Teams.Read(ctx, rs.Primary.ID)
 		if err == nil {
 			return fmt.Errorf("Team %s still exists", rs.Primary.ID)
 		}
