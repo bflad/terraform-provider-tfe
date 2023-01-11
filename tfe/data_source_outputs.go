@@ -129,22 +129,25 @@ func (d dataSourceOutputs) readConfigValues(req *tfprotov5.ReadDataSourceRequest
 			"id":                  tftypes.String,
 		}})
 	if err != nil {
-		return orgName, wsName, fmt.Errorf("Error unmarshalling config: %w", err)
+		return "", "", fmt.Errorf("Error unmarshalling config: %w", err)
 	}
 
 	var valMap map[string]tftypes.Value
 	err = val.As(&valMap)
 	if err != nil {
-		return orgName, wsName, fmt.Errorf("Error assigning configuration attributes to map: %w", err)
-	}
-
-	if valMap["organization"].IsNull() || valMap["workspace"].IsNull() {
-		return orgName, wsName, fmt.Errorf("Organization and Workspace cannot be nil: %w", err)
+		return "", "", fmt.Errorf("Error assigning configuration attributes to map: %w", err)
 	}
 
 	err = valMap["organization"].As(&orgName)
 	if err != nil {
-		return orgName, wsName, fmt.Errorf("Error assigning 'organization' value to string: %w", err)
+		if d.defaultOrganization == "" {
+			return "", "", fmt.Errorf("Error assigning 'organization' value to string: %w", err)
+		}
+		orgName = d.defaultOrganization
+	}
+
+	if valMap["workspace"].IsNull() {
+		return orgName, "", fmt.Errorf("Workspace cannot be nil: %w", err)
 	}
 
 	err = valMap["workspace"].As(&wsName)
